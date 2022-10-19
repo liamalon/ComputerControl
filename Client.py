@@ -1,11 +1,14 @@
 import random
 import socket, threading, tcp_by_size
 import mss, pyautogui
-import mouse
+#import mouse
+from pynput.mouse import Button, Controller
 from zlib import compress
 
 WIDTH = pyautogui.size().width - 100
 HEIGHT = pyautogui.size().height - 100
+WIDTH = 1000
+HEIGHT = 600
 
 class Client:
     def __init__(self, port, ip) -> None:
@@ -22,12 +25,13 @@ class Client:
     
     def recv_msg(self, sock):
         data = tcp_by_size.recv_by_size(sock).decode()
-        code = data[:5]
-        data = data[5:]
+        code = data[:4]
+        data = data[4:]
         return code, data
 
 class ClientMouse(Client):
     def start_threading(self):
+        self.mouse = Controller()
         t = threading.Thread(target=self.handle_server)
         t.start()
 
@@ -41,14 +45,18 @@ class ClientMouse(Client):
                     self.move_mouse(int(pos[0]), int(pos[1]))
                 
                 case "CLIK":
-                    self.click_mouse(data)
+                    meta_data = data.split("-")
+                    self.click_mouse(meta_data[0], meta_data[1])
         
     def move_mouse(self, x, y):
-        mouse.move(x, y, absolute=True)
+        self.mouse.position = (x,y)
 
-    def click_mouse(self, btn):
-        mouse.click(button=btn)
-
+    def click_mouse(self, press_or_realse, btn):
+        btns = {"left": Button.left, "right": Button.right, "middle": Button.middle}
+        if press_or_realse =="P":
+            self.mouse.press(btns[btn])
+        else:
+            self.mouse.release(btns[btn])
 class ClientVideo(Client):    
     def retreive_screenshot(self):
         with mss.mss() as sct:
@@ -79,10 +87,10 @@ class ClientVideo(Client):
 
 
 if __name__ == "__main__":
-    c_v = ClientVideo(8888, "127.0.0.1")
-    c_v.start_sending()
+    #c_v = ClientVideo(8888, "192.168.1.107")
+    #c_v.start_sending()
 
-    c_m = ClientMouse(4444, "127.0.0.1")
+    c_m = ClientMouse(4444, "192.168.1.107")
     c_m.start_threading()
 
     while True:

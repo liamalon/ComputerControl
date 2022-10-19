@@ -3,7 +3,6 @@ import socket, threading, tcp_by_size
 import sys
 import os
 import pyautogui   
-from PIL import ImageGrab
 import pygame
 import mouse
 from zlib import decompress
@@ -30,8 +29,8 @@ class Server:
     
     def recv_msg(self, sock):
         data = tcp_by_size.recv_by_size(sock).decode()
-        code = data[:5]
-        data = data[5:]
+        code = data[:4]
+        data = data[4:]
         return code, data
 
     def accept_clients(self):
