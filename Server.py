@@ -1,16 +1,16 @@
-import datetime
+
 import socket, threading, tcp_by_size
-import sys
-import os
 import pyautogui   
-from PIL import ImageGrab
 import pygame
-import mouse
+from pynput import mouse, keyboard 
 from zlib import decompress
 
 
 WIDTH = pyautogui.size().width - 100
 HEIGHT = pyautogui.size().height - 100
+
+WIDTH = 1000
+HEIGHT = 600
 
 class Server:
     def __init__(self, port) -> None:
@@ -26,12 +26,14 @@ class Server:
         print('after listen ... start accepting')
     
     def send_msg(self, sock, data):
-        tcp_by_size.send_with_size(sock, data.encode())
+        if type(data) != bytes:
+            data = data.encode()
+        tcp_by_size.send_with_size(sock, data)
     
     def recv_msg(self, sock):
         data = tcp_by_size.recv_by_size(sock).decode()
-        code = data[:5]
-        data = data[5:]
+        code = data[:4]
+        data = data[4:]
         return code, data
 
     def accept_clients(self):
@@ -40,23 +42,48 @@ class Server:
         self.cli_sock = cli_sock
     
 class ServerMouse(Server):
-    def init_pos(self):
-        self.prev_pos = None
-        
-    def check_movment(self):
-        pos = mouse.get_position()
+    def check_movment(self, x, y):
+        pos = (x, y)
         if self.prev_pos == pos:
             return
         self.prev_pos = pos
-        self.send_msg(self.cli_sock,"NEWP"+str(pos[0])+"-"+str(pos[1]))
-    
-    def check_pressed(self):
-        clickd = pygame.mouse.get_pressed()
-        btns = ["LEFT", "MIDDLE", "RIGHT"]
-        for index, status in enumerate(clickd):
-            if status == 1:
-                self.send_msg(self.cli_sock, "CLIK"+btns[index])
+        self.send_msg(self.cli_sock,"NEWP"+str(x)+"-"+str(y))
 
+    def start_listener(self):
+        self.prev_pos = None
+        listener_movment = mouse.Listener(on_move=self.check_movment)
+        listener_movment.start()
+
+        listener_pressed = mouse.Listener(on_click=self.check_pressed)
+        listener_pressed.start()
+    
+    def check_pressed(self, x, y, button, pressed):
+        if pressed:
+            self.send_msg(self.cli_sock,"CLIK" + "P-"+ str(button).split(".")[1])
+        else:
+            self.send_msg(self.cli_sock,"CLIK" + "R-"+ str(button).split(".")[1])
+    
+    def run(self):
+        self.start_server()
+        self.accept_clients()
+        self.start_listener()
+
+class ServerKeyBoard(Server):
+    def start_listener(self):
+        listener_movment = keyboard.Listener(on_press = self.check_pressed, on_release=self.check_released)
+        listener_movment.start()
+    
+    def check_pressed(self, key):
+        self.send_msg(self.cli_sock, "KEYP"+str(key))
+
+    def check_released(self, key):
+        self.send_msg(self.cli_sock, "KEYR"+str(key))
+    
+    def run(self):
+        self.start_server()
+        self.accept_clients()
+        self.start_listener()
+        
 class ServerVideo(Server):
     def recvall(self, conn, length):
         """ Retreive all pixels. """
@@ -81,15 +108,19 @@ class ServerVideo(Server):
 
 if __name__ == "__main__":
 
-    s_vid = ServerVideo(8888)
-    s_vid.start_server()
-    s_vid.accept_clients()
+    #s_vid = ServerVideo(8888)
+    #s_vid.start_server()
+    #s_vid.accept_clients()
 
-    s_mouse = ServerMouse(4444)
-    s_mouse.start_server()
-    s_mouse.accept_clients()
-    s_mouse.init_pos()
+    #s_mouse = ServerMouse(4444)
+    #s_mouse.run()
 
+    s_keyboard = ServerKeyBoard(2222)
+    s_keyboard.run()
+
+    while True:
+        pass
+        
     pygame.init()
     win = pygame.display.set_mode((WIDTH, HEIGHT))
     clock = pygame.time.Clock()
@@ -101,7 +132,6 @@ if __name__ == "__main__":
                 break
         
         s_vid.get_screen()
-        s_mouse.check_pressed()
         s_vid.show_screen(win)
         pygame.display.flip()
         clock.tick(60)
