@@ -2,8 +2,7 @@
 import socket, threading, tcp_by_size
 import pyautogui   
 import pygame
-import mouse
-from pynput import mouse as pmouse
+from pynput import mouse, keyboard 
 from zlib import decompress
 
 
@@ -27,7 +26,9 @@ class Server:
         print('after listen ... start accepting')
     
     def send_msg(self, sock, data):
-        tcp_by_size.send_with_size(sock, data.encode())
+        if type(data) != bytes:
+            data = data.encode()
+        tcp_by_size.send_with_size(sock, data)
     
     def recv_msg(self, sock):
         data = tcp_by_size.recv_by_size(sock).decode()
@@ -41,9 +42,6 @@ class Server:
         self.cli_sock = cli_sock
     
 class ServerMouse(Server):
-    def init_pos(self):
-        self.prev_pos = None
-        
     def check_movment(self, x, y):
         pos = (x, y)
         if self.prev_pos == pos:
@@ -52,10 +50,11 @@ class ServerMouse(Server):
         self.send_msg(self.cli_sock,"NEWP"+str(x)+"-"+str(y))
 
     def start_listener(self):
-        listener_movment = pmouse.Listener(on_move=self.check_movment)
+        self.prev_pos = None
+        listener_movment = mouse.Listener(on_move=self.check_movment)
         listener_movment.start()
 
-        listener_pressed = pmouse.Listener(on_click=self.check_pressed)
+        listener_pressed = mouse.Listener(on_click=self.check_pressed)
         listener_pressed.start()
     
     def check_pressed(self, x, y, button, pressed):
@@ -63,6 +62,27 @@ class ServerMouse(Server):
             self.send_msg(self.cli_sock,"CLIK" + "P-"+ str(button).split(".")[1])
         else:
             self.send_msg(self.cli_sock,"CLIK" + "R-"+ str(button).split(".")[1])
+    
+    def run(self):
+        self.start_server()
+        self.accept_clients()
+        self.start_listener()
+
+class ServerKeyBoard(Server):
+    def start_listener(self):
+        listener_movment = keyboard.Listener(on_press = self.check_pressed, on_release=self.check_released)
+        listener_movment.start()
+    
+    def check_pressed(self, key):
+        self.send_msg(self.cli_sock, "KEYP"+str(key))
+
+    def check_released(self, key):
+        self.send_msg(self.cli_sock, "KEYR"+str(key))
+    
+    def run(self):
+        self.start_server()
+        self.accept_clients()
+        self.start_listener()
         
 class ServerVideo(Server):
     def recvall(self, conn, length):
@@ -92,16 +112,15 @@ if __name__ == "__main__":
     #s_vid.start_server()
     #s_vid.accept_clients()
 
-    s_mouse = ServerMouse(4444)
-    s_mouse.start_server()
-    s_mouse.accept_clients()
-    s_mouse.init_pos()
-    s_mouse.start_listener()
+    #s_mouse = ServerMouse(4444)
+    #s_mouse.run()
+
+    s_keyboard = ServerKeyBoard(2222)
+    s_keyboard.run()
 
     while True:
         pass
         
-
     pygame.init()
     win = pygame.display.set_mode((WIDTH, HEIGHT))
     clock = pygame.time.Clock()
@@ -113,8 +132,6 @@ if __name__ == "__main__":
                 break
         
         s_vid.get_screen()
-        #s_mouse.check_movment()
-        #s_mouse.check_pressed()
         s_vid.show_screen(win)
         pygame.display.flip()
         clock.tick(60)
