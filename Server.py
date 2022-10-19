@@ -1,15 +1,17 @@
-import datetime
+
 import socket, threading, tcp_by_size
-import sys
-import os
 import pyautogui   
 import pygame
 import mouse
+from pynput import mouse as pmouse
 from zlib import decompress
 
 
 WIDTH = pyautogui.size().width - 100
 HEIGHT = pyautogui.size().height - 100
+
+WIDTH = 1000
+HEIGHT = 600
 
 class Server:
     def __init__(self, port) -> None:
@@ -42,20 +44,26 @@ class ServerMouse(Server):
     def init_pos(self):
         self.prev_pos = None
         
-    def check_movment(self):
-        pos = mouse.get_position()
+    def check_movment(self, x, y):
+        pos = (x, y)
         if self.prev_pos == pos:
             return
         self.prev_pos = pos
-        self.send_msg(self.cli_sock,"NEWP"+str(pos[0])+"-"+str(pos[1]))
-    
-    def check_pressed(self):
-        clickd = pygame.mouse.get_pressed()
-        btns = ["LEFT", "MIDDLE", "RIGHT"]
-        for index, status in enumerate(clickd):
-            if status == 1:
-                self.send_msg(self.cli_sock, "CLIK"+btns[index])
+        self.send_msg(self.cli_sock,"NEWP"+str(x)+"-"+str(y))
 
+    def start_listener(self):
+        listener_movment = pmouse.Listener(on_move=self.check_movment)
+        listener_movment.start()
+
+        listener_pressed = pmouse.Listener(on_click=self.check_pressed)
+        listener_pressed.start()
+    
+    def check_pressed(self, x, y, button, pressed):
+        if pressed:
+            self.send_msg(self.cli_sock,"CLIK" + "P-"+ str(button).split(".")[1])
+        else:
+            self.send_msg(self.cli_sock,"CLIK" + "R-"+ str(button).split(".")[1])
+        
 class ServerVideo(Server):
     def recvall(self, conn, length):
         """ Retreive all pixels. """
@@ -80,14 +88,19 @@ class ServerVideo(Server):
 
 if __name__ == "__main__":
 
-    s_vid = ServerVideo(8888)
-    s_vid.start_server()
-    s_vid.accept_clients()
+    #s_vid = ServerVideo(8888)
+    #s_vid.start_server()
+    #s_vid.accept_clients()
 
     s_mouse = ServerMouse(4444)
     s_mouse.start_server()
     s_mouse.accept_clients()
     s_mouse.init_pos()
+    s_mouse.start_listener()
+
+    while True:
+        pass
+        
 
     pygame.init()
     win = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -100,7 +113,8 @@ if __name__ == "__main__":
                 break
         
         s_vid.get_screen()
-        s_mouse.check_pressed()
+        #s_mouse.check_movment()
+        #s_mouse.check_pressed()
         s_vid.show_screen(win)
         pygame.display.flip()
         clock.tick(60)
