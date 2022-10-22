@@ -1,14 +1,16 @@
 import pickle
 import socket, threading, tcp_by_size
+from time import sleep
 import mss, pyautogui
 from pynput import mouse 
 from pynput import keyboard
 from zlib import compress
+import keyboard as keyboard_block
 
-WIDTH = pyautogui.size().width - 100
-HEIGHT = pyautogui.size().height - 100
-WIDTH = 1000
-HEIGHT = 600
+
+WIDTH = pyautogui.size().width - 50
+HEIGHT = pyautogui.size().height - 50
+
 
 class Client:
     def __init__(self, port, ip) -> None:
@@ -50,7 +52,6 @@ class ClientKeyBoard(Client):
                 case "KEYR":
                     state = "R"
             self.press_key(state, data)
-
         
     def press_key(self, state, key):
         try:
@@ -60,8 +61,6 @@ class ClientKeyBoard(Client):
                 self.keyboard.release(key.replace("\'",""))
         except:
             pass
-
-
 
 class ClientMouse(Client):
     def start_threading(self):
@@ -91,6 +90,7 @@ class ClientMouse(Client):
             self.mouse.press(btns[btn])
         else:
             self.mouse.release(btns[btn])
+
 class ClientVideo(Client):    
     def retreive_screenshot(self):
         with mss.mss() as sct:
@@ -119,16 +119,49 @@ class ClientVideo(Client):
         t = threading.Thread (target = self.retreive_screenshot)
         t.start()
 
+class BlockInputs():
+    def __init__(self):
+        self.block_input_flag = 1
+        self.mouse_control = mouse.Controller()
+
+    def block_inputs(self):
+        t1 = threading.Thread(target=self.blockinput_start)
+        t1.start()
+
+        print("[SUCCESS] Input blocked!")
+
+    def unblock_inputs(self):
+        self.blockinput_stop()
+
+        print("[SUCCESS] Input unblocked!")
+
+    def blockinput_start(self):
+        for i in range(150):
+            keyboard_block.block_key(i)
+
+        while self.block_input_flag == 1:
+            self.mouse_control.position = (0, 0)
+
+    def blockinput_stop(self):
+        for i in range(150):
+            keyboard_block.unblock_key(i)
+
+        self.block_input_flag = 0
 
 if __name__ == "__main__":
-    #c_v = ClientVideo(8888, "192.168.1.107")
-    #c_v.start_sending()
+    c_v = ClientVideo(8888, "192.168.1.107")
+    c_v.start_sending()
 
-    # c_m = ClientMouse(4444, "192.168.1.107")
-    # c_m.start_threading()
+    c_m = ClientMouse(4444, "192.168.1.107")
+    c_m.start_threading()
 
     c_k = ClientKeyBoard(2222, "192.168.1.107")
     c_k .start_threading()
+
+    input_blocker = BlockInputs()
+    input_blocker.block_inputs()
+    sleep(10)
+    input_blocker.unblock_inputs()
 
     while True:
         pass

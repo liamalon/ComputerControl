@@ -6,11 +6,8 @@ from pynput import mouse, keyboard
 from zlib import decompress
 
 
-WIDTH = pyautogui.size().width - 100
-HEIGHT = pyautogui.size().height - 100
-
-WIDTH = 1000
-HEIGHT = 600
+WIDTH = pyautogui.size().width - 50
+HEIGHT = pyautogui.size().height - 50
 
 class Server:
     def __init__(self, port) -> None:
@@ -108,18 +105,16 @@ class ServerVideo(Server):
 
 if __name__ == "__main__":
 
-    #s_vid = ServerVideo(8888)
-    #s_vid.start_server()
-    #s_vid.accept_clients()
+    s_vid = ServerVideo(8888)
+    s_vid.start_server()
+    s_vid.accept_clients()
 
-    #s_mouse = ServerMouse(4444)
-    #s_mouse.run()
+    s_mouse = ServerMouse(4444)
+    s_mouse.run()
 
     s_keyboard = ServerKeyBoard(2222)
     s_keyboard.run()
 
-    while True:
-        pass
         
     pygame.init()
     win = pygame.display.set_mode((WIDTH, HEIGHT))

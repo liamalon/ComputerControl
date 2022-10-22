@@ -2,7 +2,7 @@
 
 SIZE_HEADER_FORMAT = "000000000|" # n digits for data size + one delimiter
 size_header_size = len(SIZE_HEADER_FORMAT)
-TCP_DEBUG = True
+TCP_DEBUG = False
 LEN_TO_PRINT = 100
 
 
