@@ -159,13 +159,5 @@ if __name__ == "__main__":
     c_k = ClientKeyBoard(2222, ip)
     c_k .start_threading()
 
-    input_blocker = BlockInputs()
-    #input_blocker.block_inputs()
-
-    #input_blocker.unblock_inputs()
-
-    while True:
-        pass
-
         
         
