@@ -8,8 +8,8 @@ from zlib import compress
 import keyboard as keyboard_block
 
 
-WIDTH = pyautogui.size().width - 50
-HEIGHT = pyautogui.size().height - 50
+WIDTH = pyautogui.size().width 
+HEIGHT = pyautogui.size().height
 
 
 class Client:
@@ -46,11 +46,10 @@ class ClientKeyBoard(Client):
         while self.running:
             code, data = self.recv_msg(self.sock)
             state = ""
-            match code:           
-                case "KEYP":
-                    state = "P"
-                case "KEYR":
-                    state = "R"
+            if code == "KEYP":
+                state ="P"
+            else:
+                state = "R"
             self.press_key(state, data)
         
     def press_key(self, state, key):
@@ -72,14 +71,15 @@ class ClientMouse(Client):
         self.running = True
         while self.running:
             code, data = self.recv_msg(self.sock)
-            match code:
-                case "NEWP":
-                    pos = data.split("-")
+            if code == "NEWP":
+                pos = data.split("-")
+                try:
                     self.move_mouse(int(pos[0]), int(pos[1]))
-                
-                case "CLIK":
-                    meta_data = data.split("-")
-                    self.click_mouse(meta_data[0], meta_data[1])
+                except:
+                   pass
+            else:
+                meta_data = data.split("-")
+                self.click_mouse(meta_data[0], meta_data[1])
         
     def move_mouse(self, x, y):
         self.mouse.position = (x,y)
@@ -149,19 +149,20 @@ class BlockInputs():
         self.block_input_flag = 0
 
 if __name__ == "__main__":
-    c_v = ClientVideo(8888, "192.168.1.107")
+    ip =  "192.168.0.112"
+    c_v = ClientVideo(8888,ip)
     c_v.start_sending()
 
-    c_m = ClientMouse(4444, "192.168.1.107")
+    c_m = ClientMouse(4444, ip)
     c_m.start_threading()
 
-    c_k = ClientKeyBoard(2222, "192.168.1.107")
+    c_k = ClientKeyBoard(2222, ip)
     c_k .start_threading()
 
     input_blocker = BlockInputs()
-    input_blocker.block_inputs()
-    sleep(10)
-    input_blocker.unblock_inputs()
+    #input_blocker.block_inputs()
+
+    #input_blocker.unblock_inputs()
 
     while True:
         pass

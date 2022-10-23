@@ -1,13 +1,14 @@
 
 import socket, threading, tcp_by_size
+from time import time
 import pyautogui   
 import pygame
 from pynput import mouse, keyboard 
 from zlib import decompress
 
 
-WIDTH = pyautogui.size().width - 50
-HEIGHT = pyautogui.size().height - 50
+WIDTH = pyautogui.size().width 
+HEIGHT = pyautogui.size().height 
 
 class Server:
     def __init__(self, port) -> None:
@@ -38,13 +39,23 @@ class Server:
         print(f"connected, ip {addr}, port {self.port}")
         self.cli_sock = cli_sock
     
+    def run(self):
+        self.start_server()
+        self.accept_clients()
+    
 class ServerMouse(Server):
+    def __init__(self, port):
+        super().__init__(port)
+        self.start = time()
+
     def check_movment(self, x, y):
-        pos = (x, y)
-        if self.prev_pos == pos:
-            return
-        self.prev_pos = pos
-        self.send_msg(self.cli_sock,"NEWP"+str(x)+"-"+str(y))
+        if time() - self.start > 0.03:
+            pos = (x, y)
+            if self.prev_pos == pos:
+                return
+            self.prev_pos = pos
+            self.send_msg(self.cli_sock,"NEWP"+str(x)+"-"+str(y))
+            self.start = time()
 
     def start_listener(self):
         self.prev_pos = None
@@ -106,8 +117,7 @@ class ServerVideo(Server):
 if __name__ == "__main__":
 
     s_vid = ServerVideo(8888)
-    s_vid.start_server()
-    s_vid.accept_clients()
+    s_vid.run()
 
     s_mouse = ServerMouse(4444)
     s_mouse.run()

@@ -2,3 +2,4 @@ PyAutoGUI==0.9.53
 mss==6.1.0
 pynput==1.7.6
 pygame==2.1.2
+keyboard==0.13.5
